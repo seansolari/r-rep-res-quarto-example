@@ -6,13 +6,23 @@ editor: visual
 bibliography: references.bib
 ---
 
+```{r}
+#| output: false
+#| warning: false
+#| echo: false
+
+library(readr)
+
+bronars_simulation_data <- read_csv("../data/bronars_simulation_data.csv")
+```
+
 Citation to original version of this data article:
 
 Nitsch, F. J., Sellitto, M., & Kalenscher, T. (2021). Trier social stress test and food-choice: Behavioral, self-report & hormonal data. Data in brief (**Example 1**), *37*, 107245. https://doi.org/10.1016/j.dib.2021.107245 (**Example 2**)
 
 **Abstract**
 
-A sample of 144 participants underwent the Trier Social Stress Test (TSST), a psychosocial stress manipulation involving a mock interview and a mental arithmetic task, or a matched control procedure. Physiological stress was estimated via a collection of 7 saliva samples over the course of the experiment analysed for cortisol and alpha-amylase, as well as via the mean heart-rate measured before and during the experimental manipulation. Subjective stress was assessed via the Positive and Negative Affect Scale as well as four Visual Analogue Scales at 6 points over the time course of the experiment.
+A sample of 140 participants underwent the Trier Social Stress Test (TSST), a psychosocial stress manipulation involving a mock interview and a mental arithmetic task, or a matched control procedure. Physiological stress was estimated via a collection of 7 saliva samples over the course of the experiment analysed for cortisol and alpha-amylase, as well as via the mean heart-rate measured before and during the experimental manipulation. Subjective stress was assessed via the Positive and Negative Affect Scale as well as four Visual Analogue Scales at 6 points over the time course of the experiment.
 
 **Keywords:** Acute stress; Amylase Choice Consistency; Cortisol; Chronic StressFood-Choice; Rationality.
 
@@ -54,7 +64,7 @@ This [OSF](https://osf.io/6mvq7/) directory contains the raw and processed data 
 
 To repeat the analyses of the *related research article*, follow the instructions in the README file.
 
-The CSV file contains choice consistency data for 10.000 (**Example 7**) simulated participants, that have been used to determine the power of our food-choice task design to detect choice consistency violations. Simulated participants solved one measurement (11 trials) of the food-choice task. Simulated choices were uniform-random among the choice sets. Data contains the critical cost efficiency index based on the parameters defined by @nitsch2020a and @afriat1972.
+The CSV file contains choice consistency data for 10.000 (**Example 7**) simulated participants, that have been used to determine the power of our food-choice task design to detect choice consistency violations, which averaged `r round(mean(bronars_simulation_data$violation_count), 1)` violations per individual. Simulated participants solved one measurement (11 trials) of the food-choice task. Simulated choices were uniform-random among the choice sets. Data contains the critical cost efficiency index based on the parameters defined by @nitsch2020a and @afriat1972.
 
 \
 
@@ -68,7 +78,11 @@ The dataset contains data of 144 participants. Participants did not have formal 
 
 Our food-choice task was administered following a 2 × 3 mixed-factorial design with Experimental Group (stress vs. control) as between-subject factor and Measurement (Baseline, Early, Late) as within-subject factor. We deployed a standard food-choice task similar to the one used by @harbaugh2001 and @chung2017. In each trial, participants chose one out of a set of two to seven snack bundles. Each snack bundle consisted of specific amounts of a sweet or salty snack and a fruit or vegetable. The choice set was defined by all integer combinations of sweet or salty snack and fruit or vegetable on the budget-line. The budget-line was given by the following formula:
 
-(**Example 6**) Amount (fruit/vegetable) = - px/py Amount (sweet/salty) + m/py
+(**Example 6**)
+
+$$
+\text{Amount}\left( \frac{\text{fruit}}{\text{vegetable}} \right) = -\frac{\text{px}}{\text{py}}\cdot\text{Amount}\left( \frac{\text{sweet}}{\text{salty}} \right) + \frac{m}{\text{py}}
+$$
 
 At the end of the experiment, one trial was randomly selected for each participant, and their choice in that trial was implemented, i.e., participants received their chosen snack bundle. The experimental task was presented via PsychoPy @peirce2007. For 8 participants (out of N = 144 participants), no or incomplete food-choice data were saved due to a technical failure of the experimental hardware.
 
@@ -76,15 +90,94 @@ At the end of the experiment, one trial was randomly selected for each participa
 
 (**Example 8**) add Fig 3 - Heart Rate Analysis
 
+```{r}
+#| label: bayes-risk-factor
+#| echo: false
+#| message: false
+#| warning: false
+#| results: false
+#| fig.cap: "Fig 3: Mean heart rate of stress and control groups at baseline and during intervention."
+
+library(tidyverse)
+library(BayesFactor)
+
+#Read data
+df <- read_csv("../output/data/preprocessed-GARP-TSST-data.csv")
+
+#Convert df to long-format
+df_long <- df %>%
+  pivot_longer(cols = c(HR_Baseline_Average, HR_TSST_Average),
+               names_to = "Measurement",
+               values_to = "HR")
+
+#Drop missing values
+df_long <- df_long %>% drop_na(HR)
+
+#Make sure columns are coded as factors for analysis
+df_long$VPN <- as.factor(df_long$VPN)
+df_long$Measurement <- as.factor(df_long$Measurement)
+df_long$Condition <- as.factor(df_long$Condition)
+
+#Bayesian Analysis
+BF <- anovaBF(formula = HR ~ Measurement*Condition + VPN,
+              data = df_long,
+              whichRandom = "VPN")
+
+#Evidence for interaction term
+BF_interaction <- BF[4]/BF[3]
+
+BF_interaction
+
+#Summarize to mean / SEM for plot
+df_long2 <- df_long %>%
+  group_by(Measurement, Condition) %>%
+  summarize(mean_value = mean(HR, na.rm = T),
+            sem = sd(HR, na.rm = T)/sqrt(n()))
+
+#Create plot
+plot <- ggplot(df_long2, aes(Measurement, mean_value, group = Condition, color = Condition)) +
+  geom_pointrange(aes(ymin=mean_value-sem, ymax= mean_value+sem)) +
+  geom_line() +
+  theme_classic() +
+  scale_x_discrete(labels = c("Baseline",
+                              "TSST-G/Control")) +
+  ylab("Mean Heartrate (BPM)") +
+  scale_colour_grey(start = 0.5, end = 0.2) +
+  theme(legend.position = "top")
+
+#Print and save plots  
+plot
+
+#ggsave("output/plots/heartrate.pdf", plot, width = 4, height = 3)
+
+```
+
+
 (**Example 9**) add Fig 4: Cortisol and Amylase Levels in Stress and Control Groups
 
 All analyses were conducted in R in the RStudio IDE, using the packages Tidyverse (**add citation here**), stringi, BayesFactor and patchwork.
+
 
 ## Ethics Statement
 
 All participants gave their informed written consent before participation. The study protocol was approved by the ethical council of the medical faculty of Heinrich-Heine-University Düsseldorf (Study-Nr.: 2020-910). The study was conducted in alignment with the declaration of Helsinki.
 
-\
+::: {.border}
+Content here
+:::
+
+
+:::: {.columns}
+::: {.column width="50%"}
+Left column
+content on the left
+:::
+::: {.column width="50%"}
+Right column
+content on the right
+:::
+::::
+
 
 ## References
 

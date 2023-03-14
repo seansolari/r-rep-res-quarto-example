@@ -1,0 +1,40 @@
+---
+title: "Python numpy example"
+format: html
+---
+
+For a demonstration of a polar line plot, see @fig-polar.
+
+```{python}
+#| label: fig-polar
+#| fig-cap: "Line plot in polar coordinates"
+#| echo: false
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+r = np.arange(0, 2, 0.01)
+theta = 2 * np.pi * r
+fig, ax = plt.subplots(subplot_kw={"projection": "polar"})
+ax.plot(theta, r)
+ax.grid(True)
+plt.show()
+```
+
+This is also a R plot.
+
+```{r}
+#| label: fig-norm-hist
+#| fig-cap: "Normal histogram"
+#| echo: false
+
+library(ggplot2)
+
+x <- rnorm(100)
+df <- data.frame(x = x)
+
+ggplot(df, aes(x=x)) +
+    geom_histogram()
+```
+
+
