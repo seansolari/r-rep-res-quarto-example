@@ -2,8 +2,8 @@
 title: "Data Article: Trier social stress test and food-choice: Behavioral, self-report & hormonal data (sms version)"
 author: "Felix Jan Nitsch; Manuela Sellitto; Tobias Kalenscher"
 format: html
-editor: visual
 bibliography: references.bib
+csl: vancouver.csl
 ---
 
 ```{r}
@@ -12,8 +12,12 @@ bibliography: references.bib
 #| echo: false
 
 library(readr)
+library(tidyverse)
+library(BayesFactor)
 
-bronars_simulation_data <- read_csv("../data/bronars_simulation_data.csv")
+#Read data
+df <- read_csv("output/data/preprocessed-GARP-TSST-data.csv")
+bronars_simulation_data <- read_csv("data/bronars_simulation_data.csv")
 ```
 
 Citation to original version of this data article:
@@ -30,7 +34,7 @@ A sample of 140 participants underwent the Trier Social Stress Test (TSST), a ps
 
 (**Example 4**)
 
-The data are useful, as both the analysis of salivary cortisol for a relatively large sample as well as the implementation of an incentive-compatible behavioral task are expensive. Further, data sharing in the field of choice consistency/rationality is still relatively uncommon, making the aggregation of evidence challenging [@nitsch2020b].
+The data are useful, as both the analysis of salivary cortisol [@kirschbaum2007] for a relatively large sample as well as the implementation of an incentive-compatible behavioral task are expensive. Further, data sharing in the field of choice consistency/rationality is still relatively uncommon, making the aggregation of evidence challenging [@nitsch2020b].
 
 The data is valuable to researchers interested in the interplay of physiological and subjective stress. It enables exploratory data-analysis regarding individual differences in stress reactivity and mediators of the stress response.
 
@@ -88,96 +92,61 @@ At the end of the experiment, one trial was randomly selected for each participa
 
 ## **4. Preview of Research Results**
 
-(**Example 8**) add Fig 3 - Heart Rate Analysis
+(**Example 8**) Heart Rate Analysis
 
 ```{r}
-#| label: bayes-risk-factor
+#| label: fig-hr
 #| echo: false
 #| message: false
 #| warning: false
 #| results: false
-#| fig.cap: "Fig 3: Mean heart rate of stress and control groups at baseline and during intervention."
+#| fig.cap: "Mean heart rate of stress and control groups at baseline and during intervention."
 
-library(tidyverse)
-library(BayesFactor)
+source("code/03_HR_analysis.R", local = knitr::knit_global())
 
-#Read data
-df <- read_csv("../output/data/preprocessed-GARP-TSST-data.csv")
-
-#Convert df to long-format
-df_long <- df %>%
-  pivot_longer(cols = c(HR_Baseline_Average, HR_TSST_Average),
-               names_to = "Measurement",
-               values_to = "HR")
-
-#Drop missing values
-df_long <- df_long %>% drop_na(HR)
-
-#Make sure columns are coded as factors for analysis
-df_long$VPN <- as.factor(df_long$VPN)
-df_long$Measurement <- as.factor(df_long$Measurement)
-df_long$Condition <- as.factor(df_long$Condition)
-
-#Bayesian Analysis
-BF <- anovaBF(formula = HR ~ Measurement*Condition + VPN,
-              data = df_long,
-              whichRandom = "VPN")
-
-#Evidence for interaction term
-BF_interaction <- BF[4]/BF[3]
-
-BF_interaction
-
-#Summarize to mean / SEM for plot
-df_long2 <- df_long %>%
-  group_by(Measurement, Condition) %>%
-  summarize(mean_value = mean(HR, na.rm = T),
-            sem = sd(HR, na.rm = T)/sqrt(n()))
-
-#Create plot
-plot <- ggplot(df_long2, aes(Measurement, mean_value, group = Condition, color = Condition)) +
-  geom_pointrange(aes(ymin=mean_value-sem, ymax= mean_value+sem)) +
-  geom_line() +
-  theme_classic() +
-  scale_x_discrete(labels = c("Baseline",
-                              "TSST-G/Control")) +
-  ylab("Mean Heartrate (BPM)") +
-  scale_colour_grey(start = 0.5, end = 0.2) +
-  theme(legend.position = "top")
-
-#Print and save plots  
+plot <- generate_plot(df)
 plot
-
-#ggsave("output/plots/heartrate.pdf", plot, width = 4, height = 3)
-
 ```
 
+See @fig-hr for heart-rate based analysis.
 
-(**Example 9**) add Fig 4: Cortisol and Amylase Levels in Stress and Control Groups
+(**Example 9**) Cortisol and Amylase Levels in Stress and Control Groups
 
-All analyses were conducted in R in the RStudio IDE, using the packages Tidyverse (**add citation here**), stringi, BayesFactor and patchwork.
+```{r}
+#| label: fig-cortisol
+#| echo: false
+#| message: false
+#| warning: false
+#| results: false
+#| fig.cap: "Cortisol and Amylase Levels in Stress and Control Groups"
 
+source("code/02_hormone_analysis.R", local = knitr::knit_global())
+
+plot <- generate_plot("output/data/preprocessed-GARP-TSST-data.csv")
+plot
+```
+
+See @fig-cortisol for Cortisol and Amylase Levels in *Stress* and *Control* Groups.
+
+All analyses were conducted in R in the RStudio IDE, using the packages Tidyverse [@wickham2019], stringi, BayesFactor and patchwork.
 
 ## Ethics Statement
 
 All participants gave their informed written consent before participation. The study protocol was approved by the ethical council of the medical faculty of Heinrich-Heine-University Düsseldorf (Study-Nr.: 2020-910). The study was conducted in alignment with the declaration of Helsinki.
 
-::: {.border}
+::: border
 Content here
 :::
 
-
-:::: {.columns}
+::: columns
 ::: {.column width="50%"}
-Left column
-content on the left
+Left column content on the left
 :::
-::: {.column width="50%"}
-Right column
-content on the right
-:::
-::::
 
+::: {.column width="50%"}
+Right column content on the right
+:::
+:::
 
 ## References
 

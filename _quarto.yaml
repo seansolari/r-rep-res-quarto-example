@@ -1,0 +1,14 @@
+project:
+    execute-dir: project     # Working directory always the same.
+    output-dir: "output"       # HTML files go in this directory.
+#    render:                    # Specify order of rendering.
+#    - "report/preprocess.qmd"
+#    - "report/my-report.qmd"
+
+format:
+    html:
+        toc: true                # Table of contents.
+        code-fold: true          # Initially hide code.
+        fontsize: "10pt"         # Smaller font.
+        embed-resources: true    # Ensure HTML files are fully self-contained.
+
